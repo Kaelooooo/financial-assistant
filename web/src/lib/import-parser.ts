@@ -37,11 +37,13 @@ export async function parseCSV(file: File): Promise<Omit<ParsedTransaction, 'row
           const amount = Math.abs(rawAmount)
           const description = row['Description'] ?? row['Payee'] ?? row['Merchant'] ?? row['description'] ?? ''
           const rawType = row['Type'] ?? row['type'] ?? ''
+          const rawCategory = row['Category'] ?? row['category'] ?? ''
           return {
             date: normalizeDate(date),
             amount,
             description,
             type: inferType(rawAmount, rawType),
+            ...(rawCategory ? { raw_category: rawCategory } : {}),
           }
         }).filter((r) => r.date && r.amount > 0 && r.description)
         resolve(parsed)

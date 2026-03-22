@@ -24,12 +24,15 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function load() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setLoading(false); return }
+
       const today = new Date()
       const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10)
       const todayStr = today.toISOString().slice(0, 10)
 
       const [balancesResult, spendingResult, recentResult] = await Promise.all([
-        supabase.from('account_balances').select('balance'),
+        supabase.from('account_balances').select('balance').eq('user_id', user.id),
         supabase.from('transactions').select('amount').eq('type', 'expense').gte('date', monthStart).lte('date', todayStr),
         supabase.from('transactions').select('id, date, amount, description, type, categories(name)').order('date', { ascending: false }).limit(8),
       ])

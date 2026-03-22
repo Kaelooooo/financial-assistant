@@ -67,16 +67,27 @@ export default function ImportPage() {
       const { data: existing } = await supabase.from('transactions').select('date, amount, description').eq('user_id', authUser?.id ?? '')
       const existingSet = new Set((existing ?? []).map((r) => `${r.date}|${r.amount}|${r.description}`))
       const withDupes = withIds.map((r) => ({ ...r, is_duplicate: existingSet.has(`${r.date}|${r.amount}|${r.description}`) }))
-      if (aiAvailable) {
+      // Match raw_category from CSV to actual category IDs (case-insensitive)
+      const catByName = Object.fromEntries(categories.map((c) => [c.name.toLowerCase(), c.id]))
+      const withCsvCats = withDupes.map((r) => {
+        if (r.raw_category) {
+          const matchedId = catByName[r.raw_category.toLowerCase()]
+          if (matchedId) return { ...r, category_id: matchedId }
+        }
+        return r
+      })
+      // AI categorization for rows that don't already have a category
+      const uncategorized = withCsvCats.filter((r) => !r.category_id)
+      if (aiAvailable && uncategorized.length > 0) {
         try {
-          const results = await categorizeTransactions(withDupes)
-          const catByName = Object.fromEntries(categories.map((c) => [c.name, c.id]))
-          setRows(withDupes.map((r) => {
+          const results = await categorizeTransactions(uncategorized)
+          setRows(withCsvCats.map((r) => {
+            if (r.category_id) return r
             const match = results.find((res) => res.row_id === r.row_id)
-            return { ...r, category_id: match ? catByName[match.suggested_category] : undefined }
+            return { ...r, category_id: match ? catByName[match.suggested_category.toLowerCase()] : undefined }
           }))
-        } catch { setRows(withDupes) }
-      } else { setRows(withDupes) }
+        } catch { setRows(withCsvCats) }
+      } else { setRows(withCsvCats) }
       setStep('review')
     } catch (err) { setError(`Failed to parse file: ${String(err)}`) }
     finally { setParsing(false) }
@@ -155,7 +166,11 @@ export default function ImportPage() {
             ) : (
               <>
                 <span style={{ fontSize: '2rem' }}>📂</span>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Upload a CSV or OFX/QFX bank export</p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                  Upload a CSV or OFX/QFX bank export
+                  {' · '}
+                  <a href="/template.csv" download style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>Download CSV template</a>
+                </p>
                 {!mounted || accounts.length === 0
                   ? <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>Add an account above to get started</p>
                   : <span className="btn-primary" style={{ pointerEvents: 'none', padding: '8px 16px' }}>Choose File</span>

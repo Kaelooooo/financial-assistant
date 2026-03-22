@@ -86,5 +86,6 @@ export interface ParsedTransaction {
   type: TransactionType
   suggested_category?: string
   category_id?: string
+  raw_category?: string
   is_duplicate?: boolean
 }
