@@ -1,9 +1,18 @@
+'use client'
+import { useState } from 'react'
+import { supabase } from '@/lib/supabase'
 import type { Budget } from '@/types/database'
 import { getPeriodWindow } from '@/lib/budget-utils'
 
-interface Props { budget: Budget; spent: number }
+interface Props { budget: Budget; spent: number; onDeleted?: () => void; onEdit?: (budget: Budget) => void }
 
-export function BudgetCard({ budget, spent }: Props) {
+export function BudgetCard({ budget, spent, onDeleted, onEdit }: Props) {
+  const [confirming, setConfirming] = useState(false)
+
+  async function handleDelete() {
+    await supabase.from('budgets').delete().eq('id', budget.id)
+    onDeleted?.()
+  }
   const pct = Math.min((spent / budget.amount) * 100, 100)
   const over = spent > budget.amount
   const { windowStart, windowEnd } = getPeriodWindow(budget.anchor_date, budget.period)
@@ -50,6 +59,21 @@ export function BudgetCard({ budget, spent }: Props) {
         <span style={{ fontSize: '0.75rem', color: over ? 'var(--expense)' : 'var(--income)', fontWeight: 500 }}>
           {over ? `₱${fmt(Math.abs(remaining))} over` : `₱${fmt(remaining)} left`}
         </span>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px', marginTop: '12px', borderTop: '1px solid var(--border)', paddingTop: '10px' }}>
+        {confirming ? (
+          <>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginRight: 'auto', alignSelf: 'center' }}>Delete?</span>
+            <button onClick={handleDelete} className="btn-danger btn-danger-confirm">Yes</button>
+            <button onClick={() => setConfirming(false)} className="btn-danger">No</button>
+          </>
+        ) : (
+          <>
+            <button onClick={() => onEdit?.(budget)} className="btn-danger" style={{ color: 'var(--text-secondary)' }}>Edit</button>
+            <button onClick={() => setConfirming(true)} className="btn-danger">Delete</button>
+          </>
+        )}
       </div>
     </div>
   )

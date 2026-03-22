@@ -3,14 +3,17 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Category, BudgetPeriod } from '@/types/database'
 
-interface Props { categories: Category[]; onSaved: () => void; onCancel: () => void }
+import type { Budget } from '@/types/database'
 
-export function BudgetForm({ categories, onSaved, onCancel }: Props) {
+interface Props { categories: Category[]; onSaved: () => void; onCancel: () => void; budget?: Budget }
+
+export function BudgetForm({ categories, onSaved, onCancel, budget }: Props) {
   const expenseCats = categories.filter((c) => c.type === 'expense')
   const [form, setForm] = useState({
-    category_id: expenseCats[0]?.id ?? '',
-    amount: '', period: 'monthly' as BudgetPeriod,
-    anchor_date: new Date().toISOString().slice(0, 10),
+    category_id: budget?.category_id ?? expenseCats[0]?.id ?? '',
+    amount: budget ? String(budget.amount) : '',
+    period: (budget?.period ?? 'monthly') as BudgetPeriod,
+    anchor_date: budget?.anchor_date ?? new Date().toISOString().slice(0, 10),
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -19,13 +22,25 @@ export function BudgetForm({ categories, onSaved, onCancel }: Props) {
     e.preventDefault()
     if (!form.category_id) { setError('Please select a category'); return }
     setSaving(true); setError('')
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setError('Not authenticated'); setSaving(false); return }
-    const { error: err } = await supabase.from('budgets').insert({
-      ...form, amount: parseFloat(form.amount), active: true, user_id: user.id,
-    })
-    setSaving(false)
-    if (err) { setError(err.message); return }
+
+    if (budget) {
+      const { error: err } = await supabase.from('budgets').update({
+        category_id: form.category_id,
+        amount: parseFloat(form.amount),
+        period: form.period,
+        anchor_date: form.anchor_date,
+      }).eq('id', budget.id)
+      setSaving(false)
+      if (err) { setError(err.message); return }
+    } else {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setError('Not authenticated'); setSaving(false); return }
+      const { error: err } = await supabase.from('budgets').insert({
+        ...form, amount: parseFloat(form.amount), active: true, user_id: user.id,
+      })
+      setSaving(false)
+      if (err) { setError(err.message); return }
+    }
     onSaved()
   }
 
@@ -65,7 +80,7 @@ export function BudgetForm({ categories, onSaved, onCancel }: Props) {
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', paddingTop: '4px' }}>
         <button type="button" onClick={onCancel} className="btn-ghost">Cancel</button>
-        <button type="submit" disabled={saving || expenseCats.length === 0} className="btn-primary">{saving ? 'Saving…' : 'Save Budget'}</button>
+        <button type="submit" disabled={saving || expenseCats.length === 0} className="btn-primary">{saving ? 'Saving…' : budget ? 'Update Budget' : 'Save Budget'}</button>
       </div>
     </form>
   )

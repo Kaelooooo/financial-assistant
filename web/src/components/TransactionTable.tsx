@@ -10,6 +10,26 @@ interface Props {
   onUpdated?: () => void
 }
 
+function DeleteButton({ transactionId, onDeleted }: { transactionId: string; onDeleted?: () => void }) {
+  const [confirming, setConfirming] = useState(false)
+
+  async function handleDelete() {
+    await supabase.from('transactions').delete().eq('id', transactionId)
+    onDeleted?.()
+  }
+
+  if (confirming) {
+    return (
+      <span style={{ display: 'inline-flex', gap: '4px' }}>
+        <button onClick={handleDelete} className="btn-danger btn-danger-confirm" title="Confirm delete">Yes</button>
+        <button onClick={() => setConfirming(false)} className="btn-danger" title="Cancel">No</button>
+      </span>
+    )
+  }
+
+  return <button onClick={() => setConfirming(true)} className="btn-danger" title="Delete transaction">✕</button>
+}
+
 const cellStyle = { padding: '12px 16px', fontSize: '0.8rem', color: 'var(--text-secondary)' }
 
 function EditableText({ value, field, transactionId, onUpdated, mono, align, style }: {
@@ -110,12 +130,13 @@ export function TransactionTable({ transactions, categories, accounts, onUpdated
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ background: 'var(--surface-dim)', borderBottom: '1px solid var(--border)' }}>
-            {['Date', 'Description', 'Category', 'Account', 'Amount'].map((h) => (
-              <th key={h} style={{
+            {['Date', 'Description', 'Category', 'Account', 'Amount', ''].map((h, idx) => (
+              <th key={idx} style={{
                 padding: '10px 16px',
                 fontSize: '0.7rem', fontWeight: 600,
                 letterSpacing: '0.06em', textTransform: 'uppercase',
                 color: 'var(--text-secondary)', textAlign: h === 'Amount' ? 'right' : 'left',
+                width: h === '' ? '48px' : undefined,
               }}>
                 {h}
               </th>
@@ -173,6 +194,9 @@ export function TransactionTable({ transactions, categories, accounts, onUpdated
                     align="right"
                     style={{ display: 'inline', width: 'auto' }}
                   />
+                </td>
+                <td style={{ ...cellStyle, textAlign: 'center' }}>
+                  <DeleteButton transactionId={t.id} onDeleted={onUpdated} />
                 </td>
               </tr>
             )

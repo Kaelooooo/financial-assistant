@@ -1,7 +1,7 @@
 from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 from financial_assistant.config import settings
-from financial_assistant.tools.advisor_tools import web_search, calculate_savings_rate
+from financial_assistant.tools.advisor_tools import web_search, calculate_savings_rate, get_budget_status
 
 SYSTEM_PROMPT = """\
 You are Ledger, a personal financial assistant. You are having a conversation with the
@@ -14,8 +14,8 @@ and weave the numbers into your sentences or a clean readable list.
 Always respond in English. You may understand Filipino but always reply in English.
 
 Your job is to give practical, grounded financial advice tailored to the user's actual
-situation and the Philippine context. You have two tools: calculate_savings_rate and
-web_search.
+situation and the Philippine context. You have three tools: calculate_savings_rate,
+get_budget_status, and web_search.
 
 When the conversation is about the user's financial health — savings, spending habits,
 whether they're on track — call calculate_savings_rate. It accepts optional start_date
@@ -30,6 +30,12 @@ When the user asks about taxes, mandatory contributions, investment products, or
 regulation you aren't certain about, use web_search with a specific query. Philippine
 rules — BIR tax brackets, SSS/PhilHealth/Pag-IBIG rates, UITF and MP2 products — change
 over time and should be verified rather than recalled from memory.
+
+When the user asks about budgets, spending limits, or whether they're overspending in
+a category, call get_budget_status. It returns all active budgets with current-period
+spending. If any budget is over or close to the limit (above 80%), flag it and suggest
+concrete steps. When giving general financial advice, also call get_budget_status so
+you can reference their budget discipline alongside savings rate.
 
 Keep advice concrete. "Save more" tells the user nothing. "Based on your current
 spending of ₱X, setting aside ₱Y per month would get you to a 20% savings rate" is
@@ -56,7 +62,7 @@ def make_advisor_agent():
     )
     return create_agent(
         llm,
-        tools=[web_search, calculate_savings_rate],
+        tools=[web_search, calculate_savings_rate, get_budget_status],
         system_prompt=SYSTEM_PROMPT,
         name="AdvisorAgent",
     )

@@ -11,6 +11,7 @@ export default function BudgetsPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [spentMap, setSpentMap] = useState<Record<string, number>>({})
   const [showForm, setShowForm] = useState(false)
+  const [editingBudget, setEditingBudget] = useState<Budget | null>(null)
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
@@ -42,15 +43,22 @@ export default function BudgetsPage() {
         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
           Budgets
         </h1>
-        <button onClick={() => setShowForm(!showForm)} className="btn-primary">
+        <button onClick={() => { setShowForm(!showForm); setEditingBudget(null) }} className="btn-primary">
           {showForm ? 'Cancel' : '+ New Budget'}
         </button>
       </div>
 
-      {showForm && (
+      {(showForm || editingBudget) && (
         <div className="card fade-in" style={{ padding: '24px' }}>
-          <h2 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>New Budget</h2>
-          <BudgetForm categories={categories} onSaved={() => { setShowForm(false); load() }} onCancel={() => setShowForm(false)} />
+          <h2 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>
+            {editingBudget ? 'Edit Budget' : 'New Budget'}
+          </h2>
+          <BudgetForm
+            categories={categories}
+            budget={editingBudget ?? undefined}
+            onSaved={() => { setShowForm(false); setEditingBudget(null); load() }}
+            onCancel={() => { setShowForm(false); setEditingBudget(null) }}
+          />
         </div>
       )}
 
@@ -65,7 +73,7 @@ export default function BudgetsPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
           {budgets.map((b, i) => (
             <div key={b.id} className={`fade-up delay-${Math.min(i + 1, 6)}`}>
-              <BudgetCard budget={b} spent={spentMap[b.id] ?? 0} />
+              <BudgetCard budget={b} spent={spentMap[b.id] ?? 0} onDeleted={load} onEdit={(b) => { setEditingBudget(b); setShowForm(false) }} />
             </div>
           ))}
         </div>

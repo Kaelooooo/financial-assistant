@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { AIStatusBadge } from './AIStatusBadge'
@@ -14,6 +14,7 @@ const NAV_LINKS = [
 
 export function TopNav() {
   const router = useRouter()
+  const pathname = usePathname()
   const [email, setEmail] = useState('')
 
   useEffect(() => {
@@ -45,13 +46,14 @@ export function TopNav() {
       <Link href="/" className="nav-wordmark">Ledger</Link>
 
       <div style={{ display: 'flex', gap: '24px', flex: 1 }}>
-        {NAV_LINKS.map((l) => (
-          <Link key={l.href} href={l.href} className="nav-link">{l.label}</Link>
-        ))}
+        {NAV_LINKS.map((l) => {
+          const isActive = l.href === '/' ? pathname === '/' : pathname.startsWith(l.href)
+          return <Link key={l.href} href={l.href} className={`nav-link ${isActive ? 'nav-link-active' : ''}`}>{l.label}</Link>
+        })}
       </div>
 
       <AIStatusBadge />
-      <Link href="/chat" className="nav-ask-ai">Ask AI</Link>
+      <Link href="/chat" className={`nav-ask-ai ${pathname.startsWith('/chat') ? 'nav-link-active' : ''}`}>Ask AI</Link>
 
       {email && (
         <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

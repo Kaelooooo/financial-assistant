@@ -120,6 +120,20 @@ body {
 }
 .btn-ghost:hover { background: var(--surface-dim); color: var(--text-primary); }
 
+.btn-danger {
+  background: transparent;
+  color: var(--text-tertiary);
+  border: none;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.btn-danger:hover { background: #FEF2F2; color: var(--expense); }
+.btn-danger-confirm { background: var(--expense); color: #fff; }
+.btn-danger-confirm:hover { background: #B91C1C; }
+
 /* ── Nav ─────────────────────────────────────────────────── */
 
 .nav-wordmark {
@@ -141,6 +155,17 @@ body {
   position: relative;
 }
 .nav-link:hover { color: var(--text-primary); }
+.nav-link-active { color: var(--text-primary); font-weight: 600; }
+.nav-link-active::after {
+  content: '';
+  position: absolute;
+  bottom: -18px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+}
 
 .nav-ask-ai {
   background: var(--accent);
