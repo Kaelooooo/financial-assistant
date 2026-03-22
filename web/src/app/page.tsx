@@ -9,7 +9,7 @@ interface Recent {
   amount: number
   description: string
   type: string
-  categories: { name: string } | null
+  categories: { name: string }[] | { name: string } | null
 }
 
 function fmt(n: number) {
@@ -105,7 +105,11 @@ export default function DashboardPage() {
                   {t.description}
                 </p>
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-                  {t.date}{t.categories?.name && <> · {t.categories.name}</>}
+                  {t.date}
+                  {(() => {
+                    const cat = Array.isArray(t.categories) ? t.categories[0] : t.categories
+                    return cat?.name ? <> · {cat.name}</> : null
+                  })()}
                 </p>
               </div>
               <span className="mono" style={{
