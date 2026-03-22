@@ -1,0 +1,13 @@
+.venv
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+tests/
+web/
+docs/
+supabase/
+.git
+.gitignore
+*.md
+main.py
